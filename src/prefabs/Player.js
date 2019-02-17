@@ -1,5 +1,4 @@
-import PlayerBullet from "./PlayerBullet";
-import PlayerBullets from "./PlayerBullets";
+import Bullets from "./Bullets";
 
 class Player extends Phaser.Sprite {
   constructor(game, x, y) {
@@ -7,23 +6,16 @@ class Player extends Phaser.Sprite {
     this.scale.set(2);
     this.smoothed = false;
     this.triggeredFire = false;
+    this.wasMoving;
 
-    this.PlayerBullets = new PlayerBullets(this.game);
+    this.activePowerUp = 0;
 
-    window.game = game;
-    window.pb = this.PlayerBullets;
-    this.PlayerBullets.fire(300, 300);
-    console.log(this.PlayerBullets, game);
-
-    this.animations.add("left-full", [0, 5]);
-    this.animations.add("left-start", [1, 6]);
-    this.animations.add("idle", [2, 7]);
-    this.animations.add("right-start", [3, 8]);
-    this.animations.add("right-full", [4, 9]);
+    this.bullets = new Bullets(this.game);
+    this.setupAnimations();
 
     this.velocity = 250;
     //make centered
-    this.anchor.setTo(0.5, 0.5);
+    this.anchor.setTo(0.5, 0.0);
 
     //add to the game
     game.add.existing(this);
@@ -37,47 +29,77 @@ class Player extends Phaser.Sprite {
     this.animation;
 
     this.game = game;
+
+    this.game.input.keyboard.addKey(Phaser.Keyboard.W);
+    this.game.input.keyboard.addKey(Phaser.Keyboard.A);
+    this.game.input.keyboard.addKey(Phaser.Keyboard.S);
+    this.game.input.keyboard.addKey(Phaser.Keyboard.D);
+    this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+  }
+
+  setupAnimations() {
+    const anim = this.animations;
+
+    //Going right!
+    //anim.add("left-end", [0, 5]);
+    anim.add("left", [1, 6], 5, false);
+
+    anim.add("right", [3, 8], 10, false);
+    //anim.add("right-end", [4, 9]);
+
+    anim.add("idle", [2, 7]);
+
+    window.anim = anim;
   }
 
   update() {
     //this.game.debug.body(this);
-    let cursors = this.game.input.keyboard.createCursorKeys();
+    const keyboard = this.game.input.keyboard;
+    const cursors = this.game.input.keyboard.createCursorKeys();
 
-    if (cursors.left.isDown) {
+    if (this.isLeftDirection(cursors, keyboard)) {
       this.body.velocity.x = -this.velocity;
-      if (this.body.checkWorldBounds()) {
-        this.animations.play("left-full", 10, true);
-      } else {
-        this.animations.play("left-start", 10, true);
-      }
-    } else if (cursors.right.isDown) {
+      this.animations.play("left");
+    } else if (this.isRightDirection(cursors, keyboard)) {
       this.body.velocity.x = this.velocity;
-      if (this.body.checkWorldBounds()) {
-        this.animations.play("right-full", 10, true);
-      } else {
-        this.animations.play("right-start", 10, true);
-      }
+      this.animations.play("right", 10, false);
     } else if (this.body.velocity.x === 0) {
       //this.body.velocity.x = 0;
       this.animations.play("idle", 10, true);
     }
 
-    if (cursors.up.isDown) {
+    if (this.isUpDirection(cursors, keyboard)) {
       this.body.velocity.y = -this.velocity;
-    } else if (cursors.down.isDown) {
+    } else if (this.isDownDirection(cursors, keyboard)) {
       this.body.velocity.y = this.velocity;
     } else {
-      //this.body.velocity.y = 0;
+      this.body.velocity.y = 0;
     }
 
-    if (this.game.input.activePointer.isDown) {
+    if (
+      this.game.input.activePointer.isDown ||
+      this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)
+    ) {
       if (!this.triggeredFire) {
-        this.PlayerBullets.fire(this.x, this.y);
+        this.bullets.fire(this.x, this.y - this.height);
         this.triggeredFire = true;
       }
     } else {
       this.triggeredFire = false;
     }
+  }
+
+  isLeftDirection(cursors, keyboard) {
+    return cursors.left.isDown || keyboard.isDown(Phaser.Keyboard.A);
+  }
+  isRightDirection(cursors, keyboard) {
+    return cursors.right.isDown || keyboard.isDown(Phaser.Keyboard.D);
+  }
+  isUpDirection(cursors, keyboard) {
+    return cursors.up.isDown || keyboard.isDown(Phaser.Keyboard.W);
+  }
+  isDownDirection(cursors, keyboard) {
+    return cursors.down.isDown || keyboard.isDown(Phaser.Keyboard.S);
   }
 }
 
